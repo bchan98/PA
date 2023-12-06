@@ -31,24 +31,24 @@ class Packages:
                 packageTable.insert(insertID, insertPackage)
 
 class Trucks:
-    def __init__(self, speed, miles, location, depart, packages=[]):
+    def __init__(self, speed, miles, location, depart, packagesCarried=[]):
         self.speed = speed
         self.miles = miles
         self.location = location
         self.depart = depart
         self.time = depart
-        self.packages = packages
+        self.packagesCarried = packagesCarried
 
     def __str__(self):
         return f"The speed of the truck is {self.speed} miles per hour and has travelled {self.miles} miles. The truck is currently at {self.location} at {self.time}. The truck currently contains {len(self.packages)} packages."
 
     def loadTruck(self, nuPackage):
         nuPackage.status = 'IN DELIVERY'
-        self.packages.append(nuPackage)
+        self.packagesCarried.append(nuPackage)
 
     def unloadTruck(self, nuPackage):
         nuPackage.status = 'DELIVERED'
-        self.packages.remove(nuPackage)
+        self.packagesCarried.pop(self.packagesCarried.index(nuPackage))
 
 class Edge:
     def __init__(self, start, end, distance):
@@ -91,12 +91,12 @@ class Graph:
         for i in range(len(edges)):
             map.insert(vertex[i], edges[i])
     
-    def nearestNeighbourDelivery(self, truck):
+    def nearestNeighbourDelivery(self, nuTruck):
         # initialize parameters
-        curLocation = truck.location
+        curLocation = nuTruck.location
         curLocationID = nodes.index(curLocation)
 
-        packageList = truck.packages
+        packageList = nuTruck.packagesCarried
         nearestDistance = 1000
         nextPackage = ''
 
@@ -112,20 +112,35 @@ class Graph:
         timeCalc = nearestDistance / 18
         timeIncrement = timedelta(minutes=timeCalc)
 
-        modifiedTime = truck.time + timeIncrement
-        truck.time = modifiedTime
+        modifiedTime = nuTruck.time + timeIncrement
+        nuTruck.time = modifiedTime
+
+        # additionally, add mileage to the truck
+        nuTruck.miles = nuTruck.miles + nearestDistance
 
         # change current location to destination location
-        truck.location = packageTable.search(nextPackageID).street
+        nuTruck.location = packageTable.search(nextPackage).street
 
-        # remove package from package list
-        truck.packageList.pop(truck.packageList.index(nextPackage))
+        # print out that a package has been successfully delivered
+        print (f"Package no. " {nextPackage} " has been successfully delivered.")
 
+        # remove package from package list and set package status to have been delivered
+        nuTruck.unloadTruck(packageTable.search(nextPackage))
 
-#create trucks and manually load
+        return
+
+# generate hash tables + graphs
+packageTable = hash.hashTable()
+mapGraph = graph()
+
+# create trucks
 truck1 = trucks(18, 0, 0, 800, [])
 truck2 = trucks(18, 0, 0, 800, [])
 truck3 = trucks(18, 0, 0, 800, [])
 
-packageTable = hash.hashTable()
-mapGraph = graph()
+# manually load each truck
+
+# once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
+
+# finally, once trucks are empty, print out mileage of all trucks.
+
