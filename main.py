@@ -15,7 +15,7 @@ class Packages:
         return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}"
     
     @staticmethod
-    def importCSV(self, filename, packageTable):
+    def importCSV(filename, packageTable):
         with open(filename, 'r') as csvFile:
             packageCSV = csv.DictReader(csvFile)
             for row in packageCSV:

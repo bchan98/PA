@@ -17,9 +17,9 @@ class hashTable:
                     # if key exists, update value
                     self.table[i][j] = (key, value)
                     break
-                else:
-                    # if new key, append to end
-                    self.table[i].append((key, value))
+            else:
+                # if new key, append to end
+                self.table[i].append((key, value))
     
     def search(self, key):
         i = self.hash(key) # generate hash key
