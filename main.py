@@ -13,9 +13,8 @@ class Packages:
 
     def __str__(self):
         return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}"
-        return self.id, self.street, self.city, self.zip, self.deadline, self.weight, self.status
     
-    def importCSV(self, filename):
+    def importCSV(self, filename, packageTable):
         with open(filename, 'r') as csvFile:
             packageCSV = csv.DictReader(csvFile)
             for row in packageCSV:
@@ -40,7 +39,7 @@ class Trucks:
         self.packagesCarried = packagesCarried
 
     def __str__(self):
-        return f"The speed of the truck is {self.speed} miles per hour and has travelled {self.miles} miles. The truck is currently at {self.location} at {self.time}. The truck currently contains {len(self.packages)} packages."
+        return f"The speed of the truck is {self.speed} miles per hour and has travelled {self.miles} miles. The truck is currently at {self.location} at {self.time}. The truck currently contains {len(self.packagesCarried)} packages."
 
     def loadTruck(self, nuPackage):
         nuPackage.status = 'IN DELIVERY'
@@ -60,41 +59,40 @@ class Graph:
     def __init__(self):
         self.nodes = []
         self.edges = []
-        self.map = hashTable()
+        self.map = hash.hashTable()
 
-    def generateMap(self, addressList, distanceList):
+    def generateMap(self, addressFile, distanceFile):
         # get list of all locations
-        with open(filename, 'r') as addressList:
+        with open(addressFile, 'r') as addressList:
             counter = 0
-            addressCSV = csv.DictReader(addressList)
+            addressCSV = csv.reader(addressList)
             # add each vertex as an entry
-            for row in packageCSV:
+            for row in addressCSV:
                 vertex = row[2]
                 self.nodes.append(vertex)
             
         # get a list of all edges
-        with open(filename, 'r') as distanceList:
-            distanceCSV = csv.DictReader(distanceList)
-            edges = []
+        with open(distanceFile, 'r') as distanceList:
+            distanceCSV = csv.reader(distanceList)
             for row in distanceCSV:
-                edges.append(row)
+                self.edges.append(row)
         
         # fill out the distance matrix
-        for i in range(len(edges)):
-            for j in range(len(edges[i]))
-                if edges[i][j] == '':
-                    edges[i][j] = edges[j][i]
-                elif edges[j][i] == '':
-                    edges[j][i] = edges[i][j]
+        for i in range(len(self.edges)):
+            for j in range(len(self.edges[i])):
+                if self.edges[i][j] == '':
+                    self.edges[i][j] = self.edges[j][i]
+                elif self.edges[j][i] == '':
+                    self.edges[j][i] = self.edges[i][j]
         
         # hash in the edge with its matrix
-        for i in range(len(edges)):
-            map.insert(vertex[i], edges[i])
+        for i in range(len(self.edges)):
+            self.map.insert(vertex[i], self.edges[i])
     
-    def nearestNeighbourDelivery(self, nuTruck):
+    def nearestNeighbourDelivery(self, nuTruck, packageTable):
         # initialize parameters
         curLocation = nuTruck.location
-        curLocationID = nodes.index(curLocation)
+        curLocationID = self.nodes.index(curLocation)
 
         packageList = nuTruck.packagesCarried
         nearestDistance = 1000
@@ -122,25 +120,26 @@ class Graph:
         nuTruck.location = packageTable.search(nextPackage).street
 
         # print out that a package has been successfully delivered
-        print (f"Package no. " {nextPackage} " has been successfully delivered.")
+        print(f"Package no. {nextPackage} has been successfully delivered.")
 
         # remove package from package list and set package status to have been delivered
         nuTruck.unloadTruck(packageTable.search(nextPackage))
 
         return
 
-# generate hash tables + graphs
-packageTable = hash.hashTable()
-mapGraph = graph()
+def main():
+    # generate hash tables + graphs
+    packagesList = hash.hashTable() # this is the packageTable
+    mapGraph = Graph()
 
-# create trucks
-truck1 = trucks(18, 0, 0, 800, [])
-truck2 = trucks(18, 0, 0, 800, [])
-truck3 = trucks(18, 0, 0, 800, [])
+    # create trucks
+    truck1 = Trucks(18, 0, 0, 800, [])
+    truck2 = Trucks(18, 0, 0, 800, [])
+    truck3 = Trucks(18, 0, 0, 800, [])
 
-# manually load each truck
+    # manually load each truck
 
-# once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
+    # once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
 
-# finally, once trucks are empty, print out mileage of all trucks.
+    # finally, once trucks are empty, print out mileage of all trucks.
 
