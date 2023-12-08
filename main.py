@@ -110,7 +110,7 @@ class Graph:
                 nextPackage = i.id
 
         # once nearest distance found, travel there and increment time
-        timeCalc = nearestDistance / 18
+        timeCalc = (nearestDistance / 18) * 60
         timeIncrement = timedelta(minutes=timeCalc)
 
         modifiedTime = nuTruck.time + timeIncrement
@@ -155,72 +155,83 @@ def main():
     for i in truck3list:
         truck3.loadTruck(packagesTable.search(str(i)))
     # once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
-    while True:
-        print("1. Proceed with package delivery.")
-        print("2. Display status of all packages.")
-        print("3. Exit program.")
 
-        userInput = input("Please enter your choice: ")
-        firstCompareTime = time(hour=9, minute=5)
-        secondCompareTime = time(hour=10, minute=20)
-        # require an if statement to check time of truck 2 to loop back to origin and grab package 6, 25, 28, 32
-        if truck2.time.time() >= firstCompareTime:
-            # add mileage of truck to return to hub
-            calcLocation = truck2.location
-            location2List = mapGraph.search(calcLocation)
-            edgeAddition = int(location2List[0])
-            truck2.miles = truck2.miles + edgeAddition
-            # set new truck position to be hub
-            truck2.location = mapGraph.nodes[0]
-            # set new truck time
-            truck2.time = truck2.time + timedelta(minutes=(edgeAddition / 18))
-            # load packages onto truck
-            truck2.loadTruck(packagesTable.search(str(6)))
-            truck2.loadTruck(packagesTable.search(str(25)))
-            truck2.loadTruck(packagesTable.search(str(28)))
-            truck2.loadTruck(packagesTable.search(str(32)))
-        # require an if statement to check time of truck 3 to loop back to origin and grab package 9, change package 9 information to match update
-        if truck3.time.time() >= secondCompareTime:
-            # change package 9 information
-            packagesTable.search(str(9)).street = '410 S State St'
-            packagesTable.search(str(9)).city = 'Salt Lake City'
-            packagesTable.search(str(9)).zip = '84111'
-            # move truck
-            calcLocation = truck3.location
-            location3List = mapGraph.search(calcLocation)
-            edgeAddition = int(location3List[0])
-            truck3.miles = truck3.miles + edgeAddition 
-            # set new truck position to be hub
-            truck3.location = mapGraph.nodes[0]
-            # set new truck time
-            truck3.time = truck3.time + timedelta(minutes=(edgeAddition / 18))
-            # load packages onto truck
-            truck3.loadTruck(packagesTable.search(9))
-        # loop through cycle
-        if userInput == '1':
-            # run nearest neighbour algorithm for each truck once, checking if the truck is empty
-            if len(truck1.packagesCarried) != 0:
-                mapGraph.nearestNeighbourDelivery(truck1, packagesTable)
-            if len(truck2.packagesCarried) != 0:
-                mapGraph.nearestNeighbourDelivery(truck2, packagesTable)
-            if len(truck3.packagesCarried) != 0:
-                mapGraph.nearestNeighbourDelivery(truck3, packagesTable)
-        elif userInput == '2':
-            # if status is selected, print out status of all packages, additionally print out mileage for each truck
-            for i in range(1, 40):
-                print(packagesTable.search(str(i)))
-            print(truck1)
-            print(truck2)
-            print(truck3)
-        elif userInput == '3':
-            break
-        elif len(truck1.packagesCarried) == 0 and len(truck2.packagesCarried) == 0 and len(truck3.packagesCarried) == 0:
-            # finally, once trucks are empty, print out mileage of all trucks.
+    # two flags to check behaviour of looping back to hub
+    flag1 = True
+    flag2 = True
+
+    while True:
+        if len(truck1.packagesCarried) == 0 and len(truck2.packagesCarried) == 0 and len(truck3.packagesCarried) == 0:
+            # check to see if all packages have been delivered
+            print(f"All packages have been successfully delivered.")
             print(f"Truck 1 has travelled {truck1.miles} miles.")
             print(f"Truck 2 has travelled {truck2.miles} miles.")
             print(f"Truck 3 has travelled {truck3.miles} miles.")
             break
+        else:
+            # else, begin looping through package delivery
+            print("1. Proceed with package delivery.")
+            print("2. Display status of all packages.")
+            print("3. Exit program.")
 
+            userInput = input("Please enter your choice: ")
+            firstCompareTime = time(hour=9, minute=5)
+            secondCompareTime = time(hour=10, minute=20)
+            # require an if statement to check time of truck 2 to loop back to origin and grab package 6, 25, 28, 32
+            if truck2.time.time() >= firstCompareTime and flag1 == True:
+                # add mileage of truck to return to hub
+                calcLocation = truck2.location
+                location2List = mapGraph.map.search(calcLocation)
+                edgeAddition = float(location2List[0])
+                truck2.miles = truck2.miles + edgeAddition
+                # set new truck position to be hub
+                truck2.location = mapGraph.nodes[0]
+                # set new truck time
+                truck2.time = truck2.time + timedelta(minutes=(edgeAddition / 18))
+                # load packages onto truck
+                truck2.loadTruck(packagesTable.search(str(6)))
+                truck2.loadTruck(packagesTable.search(str(25)))
+                truck2.loadTruck(packagesTable.search(str(28)))
+                truck2.loadTruck(packagesTable.search(str(32)))
+                # set flag to false
+                flag1 = False
+            # require an if statement to check time of truck 3 to loop back to origin and grab package 9, change package 9 information to match update
+            if truck3.time.time() >= secondCompareTime and flag2 == True:
+                # change package 9 information
+                packagesTable.search(str(9)).street = '410 S State St'
+                packagesTable.search(str(9)).city = 'Salt Lake City'
+                packagesTable.search(str(9)).zip = '84111'
+                # move truck
+                calcLocation = truck3.location
+                location3List = mapGraph.map.search(calcLocation)
+                edgeAddition = int(location3List[0])
+                truck3.miles = truck3.miles + edgeAddition 
+                # set new truck position to be hub
+                truck3.location = mapGraph.nodes[0]
+                # set new truck time
+                truck3.time = truck3.time + timedelta(minutes=(edgeAddition / 18))
+                # load packages onto truck
+                truck3.loadTruck(packagesTable.search(9))
+                # set flag to false
+                flag2 = False
+            # loop through cycle
+            if userInput == '1':
+                # run nearest neighbour algorithm for each truck once, checking if the truck is empty
+                if len(truck1.packagesCarried) != 0:
+                    mapGraph.nearestNeighbourDelivery(truck1, packagesTable)
+                if len(truck2.packagesCarried) != 0:
+                    mapGraph.nearestNeighbourDelivery(truck2, packagesTable)
+                if len(truck3.packagesCarried) != 0:
+                    mapGraph.nearestNeighbourDelivery(truck3, packagesTable)
+            elif userInput == '2':
+                # if status is selected, print out status of all packages, additionally print out mileage for each truck
+                for i in range(1, 40):
+                    print(packagesTable.search(str(i)))
+                print(truck1)
+                print(truck2)
+                print(truck3)
+            elif userInput == '3':
+                break
 # run main function
 if __name__ == "__main__":
     main()
