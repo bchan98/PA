@@ -14,6 +14,7 @@ class Packages:
     def __str__(self):
         return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}"
     
+    @staticmethod
     def importCSV(self, filename, packageTable):
         with open(filename, 'r') as csvFile:
             packageCSV = csv.DictReader(csvFile)
@@ -128,9 +129,11 @@ class Graph:
         return
 
 def main():
-    # generate hash tables + graphs
+    # generate hash tables + graphs and fill in information
     packagesList = hash.hashTable() # this is the packageTable
-    mapGraph = Graph()
+    Packages.importCSV('CSV/package.csv', packagesList)
+    mapGraph = Graph() # this is the graph for the map
+    mapGraph.generateMap('CSV/address.csv', 'CSV/distance.csv') # generates vertexes/edges for graph
 
     # create trucks
     truck1 = Trucks(18, 0, 0, 800, [])
@@ -212,3 +215,6 @@ def main():
             print(f"Truck 3 has travelled {truck3.miles} miles.")
             break
 
+# run main function
+if __name__ == "__main__":
+    main()
