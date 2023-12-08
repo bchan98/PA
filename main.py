@@ -137,9 +137,78 @@ def main():
     truck2 = Trucks(18, 0, 0, 800, [])
     truck3 = Trucks(18, 0, 0, 800, [])
 
-    # manually load each truck
+    # generate a list of packages for each truck
+    truck1list = [13, 14, 15, 16, 19, 20, 26, 27, 33, 35, 40]
+    truck2list = [3, 18, 36, 38, 29, 30, 31, 34, 37, 39]
+    truck3list = [1, 2, 4, 5, 7, 10, 11, 12, 17, 21, 22, 23, 24]
 
+    # using the list of packages, get the package object from the hash table and load it into the truck in a for loop
+    for i in truck1list:
+        truck1.loadTruck(packagesList.search(truck1list[i]))
+        truck2.loadTruck(packagesList.search(truck2list[i]))
+        truck3.loadTruck(packagesList.search(truck3list[i]))
     # once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
+    while True:
+        print("1. Proceed with package delivery.")
+        print("2. Display status of all packages.")
+        print("3. Exit program.")
 
-    # finally, once trucks are empty, print out mileage of all trucks.
+        userInput = input("Please enter your choice: ")
+        # require an if statement to check time of truck 2 to loop back to origin and grab package 6, 25, 28, 32
+        if truck2.time >= 9005:
+            # add mileage of truck to return to hub
+            calcLocation = truck2.location
+            location2List = mapGraph.search(calcLocation)
+            edgeAddition = int(location2List[0])
+            truck2.miles = truck2.miles + edgeAddition
+            # set new truck position to be hub
+            truck2.location = mapGraph.nodes[0]
+            # set new truck time
+            truck2.time = truck2.time + timedelta(minutes=(edgeAddition / 18))
+            # load packages onto truck
+            truck2.loadTruck(packagesList.search(6))
+            truck2.loadTruck(packagesList.search(25))
+            truck2.loadTruck(packagesList.search(28))
+            truck2.loadTruck(packagesList.search(32))
+        # require an if statement to check time of truck 3 to loop back to origin and grab package 9, change package 9 information to match update
+        if truck3.time >= 1020:
+            # change package 9 information
+            packagesList.search(9).street = '410 S State St'
+            packagesList.search(9).city = 'Salt Lake City'
+            packagesList.search(9).zip = '84111'
+            # move truck
+            calcLocation = truck3.location
+            location3List = mapGraph.search(calcLocation)
+            edgeAddition = int(location3List[0])
+            truck3.miles = truck3.miles + edgeAddition 
+            # set new truck position to be hub
+            truck3.location = mapGraph.nodes[0]
+            # set new truck time
+            truck3.time = truck3.time + timedelta(minutes=(edgeAddition / 18))
+            # load packages onto truck
+            truck3.loadTruck(packagesList.search(9))
+        # loop through cycle
+        if userInput == '1':
+            # run nearest neighbour algorithm for each truck once, checking if the truck is empty
+            if len(truck1.packagesCarried) != 0:
+                mapGraph.nearestNeighbourDelivery(truck1, packagesList)
+            if len(truck2.packagesCarried) != 0:
+                mapGraph.nearestNeighbourDelivery(truck2, packagesList)
+            if len(truck3.packagesCarried) != 0:
+                mapGraph.nearestNeighbourDelivery(truck3, packagesList)
+        elif userInput == '2':
+            # if status is selected, print out status of all packages, additionally print out mileage for each truck
+            for i in range(1, 40):
+                print(packagesList.search(i))
+            print(truck1)
+            print(truck2)
+            print(truck3)
+        elif userInput == '3':
+            break
+        elif len(truck1.packagesCarried) == 0 and len(truck2.packagesCarried) == 0 and len(truck3.packagesCarried) == 0:
+            # finally, once trucks are empty, print out mileage of all trucks.
+            print(f"Truck 1 has travelled {truck1.miles} miles.")
+            print(f"Truck 2 has travelled {truck2.miles} miles.")
+            print(f"Truck 3 has travelled {truck3.miles} miles.")
+            break
 
