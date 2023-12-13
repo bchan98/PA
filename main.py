@@ -2,7 +2,7 @@ import csv, hash
 from datetime import datetime, time, timedelta
 
 class Packages:
-    def __init__(self, id, street, city, zip, deadline, weight, status):
+    def __init__(self, id, street, city, zip, deadline, weight, status, statusTime):
         self.id = id
         self.street = street
         self.city = city
@@ -10,9 +10,13 @@ class Packages:
         self.deadline = deadline
         self.weight = weight
         self.status = status
+        self.statusTime = statusTime
 
     def __str__(self):
-        return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}"
+        if self.statusTime == None:
+            return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}"
+        else:
+            return f"The package no. {self.id} is to be delivered to {self.street}, {self.city} at zipcode {self.zip} before {self.deadline}. The package weights {self.weight} pounds. The status of the package is: {self.status}, and was delivered at {self.statusTime}."
     
     @staticmethod
     def importCSV(filename, packageTable):
@@ -26,8 +30,9 @@ class Packages:
                 insertDeadline = row['DEADLINE']
                 insertWeight = row['WEIGHT']
                 insertStatus = 'AT HUB'
+                insertStatusTime = None
 
-                insertPackage = Packages(insertID, insertStreet, insertCity, insertZip, insertDeadline, insertWeight, insertStatus)
+                insertPackage = Packages(insertID, insertStreet, insertCity, insertZip, insertDeadline, insertWeight, insertStatus, insertStatusTime)
                 packageTable.insert(insertID, insertPackage)
 
 class Trucks:
@@ -48,6 +53,8 @@ class Trucks:
         self.packagesCarried.append(nuPackage)
 
     def unloadTruck(self, nuPackage):
+        sTime = self.time.strftime('%I:%M %p')
+        nuPackage.statusTime = sTime
         nuPackage.status = 'DELIVERED'
         self.packagesCarried.pop(self.packagesCarried.index(nuPackage))
 
@@ -110,7 +117,7 @@ class Graph:
                 nextPackage = i.id
 
         # once nearest distance found, travel there and increment time
-        timeCalc = (nearestDistance / 18) * 60
+        timeCalc = (nearestDistance / nuTruck.speed) * 60
         timeIncrement = timedelta(minutes=timeCalc)
 
         modifiedTime = nuTruck.time + timeIncrement
@@ -138,13 +145,13 @@ def main():
     mapGraph.generateMap('CSV/address.csv', 'CSV/distance.csv') # generates vertexes/edges for graph
     t = datetime(year=2023, month=12, day=5, hour=8, minute=00) # set time to 8:00 AM
     # create trucks
-    truck1 = Trucks(18, 0, '4001 South 700 East', t, [])
-    truck2 = Trucks(18, 0, '4001 South 700 East', t, [])
-    truck3 = Trucks(18, 0, '4001 South 700 East', t, [])
+    truck1 = Trucks(18.0, 0, '4001 South 700 East', t, [])
+    truck2 = Trucks(18.0, 0, '4001 South 700 East', t, [])
+    truck3 = Trucks(18.0, 0, '4001 South 700 East', t, [])
 
     # generate a list of packages for each truck
     truck1list = [13, 14, 15, 16, 19, 20, 26, 27, 33, 35, 40]
-    truck2list = [3, 18, 36, 38, 29, 30, 31, 34, 37, 39]
+    truck2list = [3, 8, 9, 18, 36, 38, 29, 30, 31, 34, 37, 39]
     truck3list = [1, 2, 4, 5, 7, 10, 11, 12, 17, 21, 22, 23, 24]
 
     # using the list of packages, get the package object from the hash table and load it into the truck in a for loop
@@ -164,9 +171,13 @@ def main():
         if len(truck1.packagesCarried) == 0 and len(truck2.packagesCarried) == 0 and len(truck3.packagesCarried) == 0:
             # check to see if all packages have been delivered
             print(f"All packages have been successfully delivered.")
+            for i in range(1, 41):
+                    print(packagesTable.search(str(i)))
             print(f"Truck 1 has travelled {truck1.miles} miles.")
             print(f"Truck 2 has travelled {truck2.miles} miles.")
             print(f"Truck 3 has travelled {truck3.miles} miles.")
+            totalMiles = truck1.miles + truck2.miles + truck3.miles
+            print(f"The total mileage for all trucks is {totalMiles} miles.")
             break
         else:
             # else, begin looping through package delivery
@@ -225,7 +236,7 @@ def main():
                     mapGraph.nearestNeighbourDelivery(truck3, packagesTable)
             elif userInput == '2':
                 # if status is selected, print out status of all packages, additionally print out mileage for each truck
-                for i in range(1, 40):
+                for i in range(1, 41):
                     print(packagesTable.search(str(i)))
                 print(truck1)
                 print(truck2)
