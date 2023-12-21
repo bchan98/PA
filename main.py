@@ -1,3 +1,5 @@
+# Brendan Chan - 010555373 - WGU C950 - Python 3.11.4
+
 import csv, hash
 from datetime import datetime, time, timedelta
 
@@ -34,6 +36,10 @@ class Packages:
 
                 insertPackage = Packages(insertID, insertStreet, insertCity, insertZip, insertDeadline, insertWeight, insertStatus, insertStatusTime)
                 packageTable.insert(insertID, insertPackage)
+    
+    def resetPackage(self):
+        self.status = 'AT HUB'
+        self.statusTime = None
 
 class Trucks:
     def __init__(self, speed, miles, location, depart, packagesCarried=[]):
@@ -98,7 +104,7 @@ class Graph:
         for i in range(len(self.nodes)):
             self.map.insert(self.nodes[i], self.edges[i])
     
-    def nearestNeighbourDelivery(self, nuTruck, inputPackageTable):
+    def nearestNeighbourDelivery(self, nuTruck, inputPackageTable, inputTime):
         # initialize parameters
         curLocation = nuTruck.location
         curLocationID = self.nodes.index(curLocation)
@@ -116,78 +122,105 @@ class Graph:
                 nearestDistance = edgeWeight
                 nextPackage = i.id
 
-        # once nearest distance found, travel there and increment time
+        # once nearest distance found, check the travel time.
         timeCalc = (nearestDistance / nuTruck.speed) * 60
         timeIncrement = timedelta(minutes=timeCalc)
 
         modifiedTime = nuTruck.time + timeIncrement
-        nuTruck.time = modifiedTime
 
-        # additionally, add mileage to the truck
-        nuTruck.miles = nuTruck.miles + nearestDistance
+        # check if travel time would exceed input time
+        if modifiedTime.time() >= inputTime.time():
+            # signal delivery would have passed input time
+            return 2
+        else:
+            # if would not, travel to new location and add time to truck
+            nuTruck.time = modifiedTime
 
-        # change current location to destination location
-        nuTruck.location = inputPackageTable.search(nextPackage).street
+            # additionally, add mileage to the truck
+            nuTruck.miles = nuTruck.miles + nearestDistance
 
-        # print out that a package has been successfully delivered
-        print(f"Package no. {nextPackage} has been successfully delivered.")
+            # change truck's previous location to new location
+            nuTruck.location = inputPackageTable.search(nextPackage).street
 
-        # remove package from package list and set package status to have been delivered
-        nuTruck.unloadTruck(inputPackageTable.search(nextPackage))
+            # remove package from package list and set package status to have been delivered
+            nuTruck.unloadTruck(inputPackageTable.search(nextPackage))
 
-        return
+            # signal delivery was successful
+            return 1
 
 def main():
-    # generate hash tables + graphs and fill in information
-    packagesTable = hash.hashTable() # this is the packageTable
-    Packages.importCSV('CSV/package.csv', packagesTable)
-    mapGraph = Graph() # this is the graph for the map
-    mapGraph.generateMap('CSV/address.csv', 'CSV/distance.csv') # generates vertexes/edges for graph
-    t = datetime(year=2023, month=12, day=5, hour=8, minute=00) # set time to 8:00 AM
-    # create trucks
-    truck1 = Trucks(18.0, 0, '4001 South 700 East', t, [])
-    truck2 = Trucks(18.0, 0, '4001 South 700 East', t, [])
-    truck3 = Trucks(18.0, 0, '4001 South 700 East', t, [])
-
-    # generate a list of packages for each truck
-    truck1list = [13, 14, 15, 16, 19, 20, 26, 27, 33, 35, 40]
-    truck2list = [3, 8, 9, 18, 36, 38, 29, 30, 31, 34, 37, 39]
-    truck3list = [1, 2, 4, 5, 7, 10, 11, 12, 17, 21, 22, 23, 24]
-
-    # using the list of packages, get the package object from the hash table and load it into the truck in a for loop
-    for i in truck1list:
-        truck1.loadTruck(packagesTable.search(str(i)))
-    for i in truck2list:
-        truck2.loadTruck(packagesTable.search(str(i)))
-    for i in truck3list:
-        truck3.loadTruck(packagesTable.search(str(i)))
-    # once loaded, create a loop - the loop asks either to display status of all packages, or to allow trucks to continue delivery.
-
-    # two flags to check behaviour of looping back to hub
-    flag1 = True
-    flag2 = True
-
+    # give introduction + instructions
+    print("Welcome to the WGUPS package delivery system.")
+    print("This program is designed to deliver packages until the user inputted time has been met. Afterwards, it will pause delivery and give output on the status of all the packages and the trucks.")
+    print("If you instead wish to immediately exit the program, please enter 'exit'.")
+    print("You can input in a time to check the status of all the packages in delivery. Please provide the time in a 24 hour format as follows: HH:MM")
+    
     while True:
-        if len(truck1.packagesCarried) == 0 and len(truck2.packagesCarried) == 0 and len(truck3.packagesCarried) == 0:
-            # check to see if all packages have been delivered
-            print(f"All packages have been successfully delivered.")
-            for i in range(1, 41):
-                    print(packagesTable.search(str(i)))
-            print(f"Truck 1 has travelled {truck1.miles} miles.")
-            print(f"Truck 2 has travelled {truck2.miles} miles.")
-            print(f"Truck 3 has travelled {truck3.miles} miles.")
-            totalMiles = truck1.miles + truck2.miles + truck3.miles
-            print(f"The total mileage for all trucks is {totalMiles} miles.")
-            break
-        else:
-            # else, begin looping through package delivery
-            print("1. Proceed with package delivery.")
-            print("2. Display status of all packages.")
-            print("3. Exit program.")
+        # generate hash tables + graphs and fill in information
+        packagesTable = hash.hashTable() # this is the packageTable
+        Packages.importCSV('CSV/package.csv', packagesTable)
+        mapGraph = Graph() # this is the graph for the map
+        mapGraph.generateMap('CSV/address.csv', 'CSV/distance.csv') # generates vertexes/edges for graph
+        t = datetime(year=2023, month=12, day=5, hour=8, minute=00) # set time to 8:00 AM
 
-            userInput = input("Please enter your choice: ")
-            firstCompareTime = time(hour=9, minute=5)
-            secondCompareTime = time(hour=10, minute=20)
+        # create flags to check behaviour of trucks
+        flag1 = True
+        flag2 = True
+        marker = 0
+
+        # two time comparisons to meet requirements of looping back to hub
+        firstCompareTime = time(hour=9, minute=5)
+        secondCompareTime = time(hour=10, minute=20)
+
+        # inquire for user input
+        while True:
+            print("You may enter in another time to check in on the status of all packages. If you wish to exit the program, please enter 'exit'.")
+            userTime = input("Please input a time: ")
+            try:
+                timeCheck = datetime.strptime(userTime, '%H:%M')
+                break
+            except ValueError:
+                if userTime == 'exit':
+                    exit()
+                else:
+                    print("Invalid input. Please enter the time in the format HH:MM.")
+
+        # create trucks
+        truck1 = Trucks(18.0, 0, '4001 South 700 East', t, [])
+        truck2 = Trucks(18.0, 0, '4001 South 700 East', t, [])
+        truck3 = Trucks(18.0, 0, '4001 South 700 East', t, [])
+
+        # check if time has passed 8:00 - if not, do not deliver
+        if timeCheck.time() < t.time():
+            print("The time has been reached. The status of all packages is as follows:")
+            for i in range(1, 41):
+                print(packagesTable.search(str(i)))
+            print("The status of the trucks are as follows:")
+            print("The first truck:")
+            print(truck1)
+            print("The second truck:")
+            print(truck2)
+            print("The third truck:")
+            print(truck3)
+            print(f"The total mileage travelled by all trucks is {truck1.miles + truck2.miles + truck3.miles} miles.")
+            continue
+
+        # generate a list of packages for each truck
+        truck1list = [13, 14, 15, 16, 19, 20, 26, 40]
+        truck2list = [3, 8, 18, 36, 38, 29, 30, 31, 34, 37, 39]
+        truck3list = [1, 2, 4, 5, 7, 10, 11, 12, 17, 21, 22, 23, 24, 35, 33, 27]
+        
+        # set the time to start of the day
+        checkStartFlag = True
+        # reset package status
+        for i in range(1, 41):
+            packagesTable.search(str(i)).resetPackage()
+        # reset delivery flag
+        deliveryFlag = True
+
+        # begin delivery loop
+        while deliveryFlag == True:
+            marker = 0
             # require an if statement to check time of truck 2 to loop back to origin and grab package 6, 25, 28, 32
             if truck2.time.time() >= firstCompareTime and flag1 == True:
                 # add mileage of truck to return to hub
@@ -215,34 +248,64 @@ def main():
                 # move truck
                 calcLocation = truck3.location
                 location3List = mapGraph.map.search(calcLocation)
-                edgeAddition = int(location3List[0])
+                edgeAddition = float(location3List[0])
                 truck3.miles = truck3.miles + edgeAddition 
                 # set new truck position to be hub
                 truck3.location = mapGraph.nodes[0]
                 # set new truck time
                 truck3.time = truck3.time + timedelta(minutes=(edgeAddition / 18))
                 # load packages onto truck
-                truck3.loadTruck(packagesTable.search(9))
+                truck3.loadTruck(packagesTable.search(str(9)))
                 # set flag to false
                 flag2 = False
-            # loop through cycle
-            if userInput == '1':
-                # run nearest neighbour algorithm for each truck once, checking if the truck is empty
-                if len(truck1.packagesCarried) != 0:
-                    mapGraph.nearestNeighbourDelivery(truck1, packagesTable)
-                if len(truck2.packagesCarried) != 0:
-                    mapGraph.nearestNeighbourDelivery(truck2, packagesTable)
-                if len(truck3.packagesCarried) != 0:
-                    mapGraph.nearestNeighbourDelivery(truck3, packagesTable)
-            elif userInput == '2':
-                # if status is selected, print out status of all packages, additionally print out mileage for each truck
-                for i in range(1, 41):
-                    print(packagesTable.search(str(i)))
-                print(truck1)
-                print(truck2)
-                print(truck3)
-            elif userInput == '3':
+
+            # check if this is the start of the day
+            if checkStartFlag == True:
+                # if start of day, using the list of packages, get the package object from the hash table and load packages into the truck via for loop 
+                for i in truck1list:
+                    truck1.loadTruck(packagesTable.search(str(i)))
+                for i in truck2list:
+                    truck2.loadTruck(packagesTable.search(str(i)))
+                for i in truck3list:
+                    truck3.loadTruck(packagesTable.search(str(i)))
+                checkStartFlag = False
+
+            # run nearest neighbour algorithm for one cycle, if there are packages on the truck
+            if len(truck1.packagesCarried) != 0:
+                result1 = mapGraph.nearestNeighbourDelivery(truck1, packagesTable, timeCheck)
+            if len(truck2.packagesCarried) != 0:
+                result2 = mapGraph.nearestNeighbourDelivery(truck2, packagesTable, timeCheck)
+            if len(truck3.packagesCarried) != 0:
+                result3 = mapGraph.nearestNeighbourDelivery(truck3, packagesTable, timeCheck)
+
+            # check if any of the deliveries would have passed the input time.
+            if result1 and result2 and result3 != 1:
+                # if all 3 conditions are true, deliveryFlag is set to false and loop ends
+                deliveryFlag = False
+
+            # check if all packages have been delivered
+            for i in range(1, 41):
+                if packagesTable.search(str(i)).status != 'DELIVERED':
+                    marker = 1
+
+            # if all packages have been delivered, deliveryFlag is set to false and loop ends
+            if marker == 0:
+                deliveryFlag = False
                 break
+
+        # after time has been reached, ask to print out status of all packages and trucks
+        print("The time has been reached. The status of all packages is as follows:")
+        for i in range(1, 41):
+            print(packagesTable.search(str(i)))
+        print("The status of the trucks are as follows:")
+        print("The first truck:")
+        print(truck1)
+        print("The second truck:")
+        print(truck2)
+        print("The third truck:")
+        print(truck3)
+        print(f"The total mileage travelled by all trucks is {truck1.miles + truck2.miles + truck3.miles} miles.")
+
 # run main function
 if __name__ == "__main__":
     main()
