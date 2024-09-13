@@ -3,6 +3,11 @@ on:
   push:
     paths:
     - '**.py'
+
+permissions:
+  checks: write
+  contents: write
+  
 jobs:
   autoyapf:
     runs-on: ubuntu-latest
