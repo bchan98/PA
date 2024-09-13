@@ -1,8 +1,11 @@
 name: Formatting python code
 on:
   push:
-    paths:
-    - '**.py'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   checks: write
