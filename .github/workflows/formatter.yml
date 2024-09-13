@@ -2,9 +2,9 @@ name: Format Code
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches-ignore: [master]
+    branches-ignore: [main]
 
 permissions:
   checks: write
